@@ -1,0 +1,116 @@
+# evision事始め
+
+## はじめに
+
+本記事では、[evision](https://github.com/cocoa-xu/evision)を試してみます。evisionとは、OpenCVのElixirバインディングです。[Nx](https://github.com/elixir-nx/nx)との連携もでき[Nerves](https://www.nerves-project.org/)にも対応している、夢が広がるライブラリです。
+
+(この文書は「[evision事始め - ElixirでOpenCVを使って画像処理をする](https://zenn.dev/kentarok/articles/4c92dacfe1d1fe)」の元になったものです)
+
+## 実験環境
+
+* iMac (24-inch, M1, 2021)
+* macOSX Monterey (12.2)
+* Elixir: 1.13.2-otp-24
+* Livebook: Version 1.67
+
+## 事前準備
+
+evisionの依存ライブラリ（OpenCVなど）をインストールし、Livebook上で依存モジュールをインストールします。
+
+<!-- livebook:{"break_markdown":true} -->
+
+### 依存ライブラリのインストール
+
+依存ライブラリをインストールします。
+
+```
+$ brew install opencv cmake
+```
+
+### 依存モジュールのインストール
+
+`Mix.install/2`をLivebook上で実行します。
+
+```elixir
+Mix.install([
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
+  {:kino, "~> 0.5.2"}
+])
+```
+
+## evisionを動かしてみる
+
+iMacの内蔵カメラで映像をキャプチャして、そこからフレームを読み取って画像として書き出してみます。
+
+<!-- livebook:{"break_markdown":true} -->
+
+まず、evisionモジュールを`alias`し（しなくてもいいけど、提供元のドキュメントに合わせます）、ファイルを読み書きしたいディレクトリ（このLivebookのファイルの実体があるディレクトリ）に移動し、内蔵カメラのデバイスを取得します。
+
+```elixir
+alias Evision, as: OpenCV
+
+File.cd!(__DIR__)
+{:ok, cap} = OpenCV.VideoCapture.videoCapture(0)
+```
+
+`Evision`から`alias`された`OpenCV`経由のAPIを使っていきます。
+
+```elixir
+{:ok, mat} = OpenCV.VideoCapture.read(cap)
+:ok = OpenCV.imwrite("images/evision/capture.png", mat)
+```
+
+上記のコードを実行すると、`images/evision/capture.png`という名前で映像からキャプチャした画像が書き出されます。
+
+## カメラから画像を取得して表示する
+
+今度は、カメラから取得した映像をLivebook上に直接表示してみる。
+
+```elixir
+{:ok, mat} = OpenCV.VideoCapture.read(cap)
+{:ok, encoded} = OpenCV.imencode(".png", mat)
+
+encoded
+|> IO.iodata_to_binary()
+|> Kino.Image.new(:png)
+```
+
+![](./images/evision/capture.png)
+ご覧の通り、素敵な画像を取得できました。
+
+## カメラ映像を表示する
+
+[Kino](https://hexdocs.pm/kino/Kino.html)の提供する`Kino.animate/3`を使えば、映像から画像を読み出してアニメーションすることで、Livebook上に動画を表示することもできます。
+
+```elixir
+Kino.animate(10, 0, fn i ->
+  {:ok, mat} = OpenCV.VideoCapture.read(cap)
+  {:ok, encoded} = OpenCV.imencode(".png", mat)
+
+  kino =
+    encoded
+    |> IO.iodata_to_binary()
+    |> Kino.Image.new(:png)
+
+  # とりあえず1000回で止める
+  if i < 1000 do
+    {:cont, kino, i + 1}
+  else
+    :halt
+  end
+end)
+```
+
+※ リアルタイムに表示している動画なので、記事上では表示できません。カメラの前で、上記写真の画像の素敵な男性が動いているのを想像してください。
+
+## 発展的な話題
+
+上記のアニメーションによる映像表示は、[@ShozF](https://twitter.com/ShozF)さんが以下のツイートでRaspberry PiとNerves Livebookを使って実現していたのを見て、自分でも試してみたものです（こちらは、OpenCVではなく[Picam](https://github.com/elixir-vision/picam)を使っています）。
+
+https://twitter.com/ShozF/status/1487343261329289217
+
+@ShozFさんはさらに、機械学習モデルを動かして手の検出をするデモも実現しています。こんなことが簡単にできるようになるなんて、夢が広がりますね。
+
+https://twitter.com/ShozF/status/1489099577894440962
+
+また、画像処理や機械学習については、[evisionのexamplesディレクトリ](https://github.com/cocoa-xu/evision/tree/main/examples)に例がありますので、詳しくはそちらをどうぞ。

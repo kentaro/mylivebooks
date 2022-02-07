@@ -57,10 +57,10 @@ File.cd!(__DIR__)
 
 ```elixir
 {:ok, mat} = OpenCV.VideoCapture.read(cap)
-:ok = OpenCV.imwrite("images/evision/capture.png", mat)
+:ok = OpenCV.imwrite("capture.png", mat)
 ```
 
-上記のコードを実行すると、`images/evision/capture.png`という名前で映像からキャプチャした画像が書き出されます。
+上記のコードを実行すると、`capture.png`という名前で映像からキャプチャした画像が書き出されます。
 
 ## カメラから画像を取得して表示する
 
@@ -75,7 +75,7 @@ encoded
 |> Kino.Image.new(:png)
 ```
 
-![](./images/evision/capture.png)
+![](./capture.png)
 ご覧の通り、素敵な画像を取得できました。
 
 ## カメラ映像を表示する
